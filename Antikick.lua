@@ -18,7 +18,8 @@ local function isSafeRemote(obj)
 
     -- 排除系统内建的事件
     local blockedNames = {
-        "request", "camera", "cframe", "setplayerblocklist", "getplayers", "getfriend", "getuser", "getleaderstats"
+        "request", "camera", "cframe", "setplayerblocklist", "getplayers", "getfriend", "getuser", "getleaderstats",
+        "whisperchat", "experiencechat", "chat", "setcore", "gameanalytics", "getplayer", "joinrequest"
     }
 
     for _, pattern in pairs(blockedNames) do
