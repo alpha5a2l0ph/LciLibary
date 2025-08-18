@@ -2,61 +2,34 @@ local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local cclosure = syn and syn.newcclosure or newcclosure or function(f) return f end
 
-local function isInjected()
-    local blacklisted = {"synapse","kernel","vape","scriptware","sentinel","protosmash","fluxus","hydra","krnl","delta"}
-    for _, lib in pairs(blacklisted) do
-        if string.match(tostring(debug.getinfo(1).source), lib) then
-            return true
-        end
-    end
-    return false
-end
-if isInjected() then return end
-
-local function isSafeRemote(obj)
-    local name = obj.Name:lower()
-
-    -- 排除包含 "request", "camera", "cframe", "chat", "experience" 的系统事件
-    local blockedNames = {
-        "request", "camera", "cframe", "setplayerblocklist", "getplayers", "getfriend", "getuser", "getleaderstats",
-        "whisperchat", "experiencechat", "chat", "setcore", "gameanalytics", "getplayer", "joinrequest", "teleport"
-    }
-
-    -- 排除 Roblox 内部的事件
-    for _, pattern in pairs(blockedNames) do
-        if name:find(pattern) then
-            return false
-        end
-    end
-
-    -- 进一步过滤系统事件：检查 `RemoteEvent` 和 `RemoteFunction` 是否定义 `FireServer` 或 `InvokeServer`
-    if (obj:IsA("RemoteEvent") and not obj.FireServer) or (obj:IsA("RemoteFunction") and not obj.InvokeServer) then
-        return false
-    end
-
-    return true
-end
-
-local function protectRemote(obj)
-    if obj:IsA("RemoteEvent") and obj.FireServer and isSafeRemote(obj) then
-        local old = obj.FireServer
-        obj.FireServer = cclosure(function(self,...)
-            for _,v in pairs({...}) do
-                if type(v)=="string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
+local function safeHookRemote(obj)
+    if obj:IsA("RemoteEvent") then
+        pcall(function()
+            local old = obj.FireServer
+            if old then
+                obj.FireServer = cclosure(function(self,...)
+                    for _,v in pairs({...}) do
+                        if type(v)=="string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
+                    end
+                    return old(self,...)
+                end)
             end
-            return old(self,...)
         end)
-    elseif obj:IsA("RemoteFunction") and obj.InvokeServer and isSafeRemote(obj) then
-        local old = obj.InvokeServer
-        obj.InvokeServer = cclosure(function(self,...)
-            for _,v in pairs({...}) do
-                if type(v)=="string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
+    elseif obj:IsA("RemoteFunction") then
+        pcall(function()
+            local old = obj.InvokeServer
+            if old then
+                obj.InvokeServer = cclosure(function(self,...)
+                    for _,v in pairs({...}) do
+                        if type(v)=="string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
+                    end
+                    return old(self,...)
+                end)
             end
-            return old(self,...)
         end)
     end
-    for _,c in ipairs(obj:GetChildren()) do
-        protectRemote(c)
+    for _, c in ipairs(obj:GetChildren()) do
+        safeHookRemote(c)
     end
 end
 
@@ -90,4 +63,4 @@ mt.__newindex = function(self,key,value)
 end
 setreadonly(mt,true)
 
-protectRemote(game)
+safeHookRemote(game)
