@@ -9,7 +9,7 @@ local function safeHookRemote(obj)
             if old then
                 obj.FireServer = cclosure(function(self,...)
                     for _,v in pairs({...}) do
-                        if type(v)=="string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
+                        if type(v) == "string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
                     end
                     return old(self,...)
                 end)
@@ -21,7 +21,7 @@ local function safeHookRemote(obj)
             if old then
                 obj.InvokeServer = cclosure(function(self,...)
                     for _,v in pairs({...}) do
-                        if type(v)=="string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
+                        if type(v) == "string" and (v:lower():find("kick") or v:lower():find("shutdown") or v:lower():find("teleport") or v:lower():find("destroy")) then return end
                     end
                     return old(self,...)
                 end)
