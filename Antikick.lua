@@ -15,9 +15,18 @@ if isInjected() then return end
 
 local function isSafeRemote(obj)
     local name = obj.Name:lower()
-    if name:find("request") or name:find("camera") or name:find("cframe") then
-        return false
+
+    -- 排除系统内建的事件
+    local blockedNames = {
+        "request", "camera", "cframe", "setplayerblocklist", "getplayers", "getfriend", "getuser", "getleaderstats"
+    }
+
+    for _, pattern in pairs(blockedNames) do
+        if name:find(pattern) then
+            return false
+        end
     end
+
     return true
 end
 
