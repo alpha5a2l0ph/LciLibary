@@ -16,16 +16,22 @@ if isInjected() then return end
 local function isSafeRemote(obj)
     local name = obj.Name:lower()
 
-    -- 排除系统内建的事件
+    -- 排除包含 "request", "camera", "cframe", "chat", "experience" 的系统事件
     local blockedNames = {
         "request", "camera", "cframe", "setplayerblocklist", "getplayers", "getfriend", "getuser", "getleaderstats",
-        "whisperchat", "experiencechat", "chat", "setcore", "gameanalytics", "getplayer", "joinrequest"
+        "whisperchat", "experiencechat", "chat", "setcore", "gameanalytics", "getplayer", "joinrequest", "teleport"
     }
 
+    -- 排除 Roblox 内部的事件
     for _, pattern in pairs(blockedNames) do
         if name:find(pattern) then
             return false
         end
+    end
+
+    -- 进一步过滤系统事件：检查 `RemoteEvent` 和 `RemoteFunction` 是否定义 `FireServer` 或 `InvokeServer`
+    if (obj:IsA("RemoteEvent") and not obj.FireServer) or (obj:IsA("RemoteFunction") and not obj.InvokeServer) then
+        return false
     end
 
     return true
