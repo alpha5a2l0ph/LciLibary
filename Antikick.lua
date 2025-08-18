@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local cclosure = syn and syn.newcclosure or newcclosure or function(f) return f end
 
--- 防止外部注入器检测
 local function isInjected()
     local blacklisted = {"synapse","kernel","vape","scriptware","sentinel","protosmash","fluxus","hydra","krnl","delta"}
     for _, lib in pairs(blacklisted) do
@@ -14,9 +13,16 @@ local function isInjected()
 end
 if isInjected() then return end
 
--- 保护远程事件和函数
+local function isSafeRemote(obj)
+    local name = obj.Name:lower()
+    if name:find("request") or name:find("camera") or name:find("cframe") then
+        return false
+    end
+    return true
+end
+
 local function protectRemote(obj)
-    if obj:IsA("RemoteEvent") and obj.FireServer then
+    if obj:IsA("RemoteEvent") and obj.FireServer and isSafeRemote(obj) then
         local old = obj.FireServer
         obj.FireServer = cclosure(function(self,...)
             for _,v in pairs({...}) do
@@ -24,7 +30,7 @@ local function protectRemote(obj)
             end
             return old(self,...)
         end)
-    elseif obj:IsA("RemoteFunction") and obj.InvokeServer then
+    elseif obj:IsA("RemoteFunction") and obj.InvokeServer and isSafeRemote(obj) then
         local old = obj.InvokeServer
         obj.InvokeServer = cclosure(function(self,...)
             for _,v in pairs({...}) do
@@ -68,8 +74,4 @@ mt.__newindex = function(self,key,value)
 end
 setreadonly(mt,true)
 
-task.spawn(function()
-    while task.wait(2) do
-        pcall(function() protectRemote(game) end)
-    end
-end)
+protectRemote(game)
